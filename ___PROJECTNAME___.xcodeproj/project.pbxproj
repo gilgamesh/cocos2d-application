@@ -669,7 +669,7 @@
 			dependencies = (
 			);
 			name = "___PROJECTNAME___";
-			productName = foo;
+			productName = "___PROJECTNAME___";
 			productReference = 1D6058910D05DD3D006BFB54 /* ___PROJECTNAME___.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -826,7 +826,7 @@
 				INFOPLIST_FILE = Info.plist;
 				OTHER_LDFLAGS = "";
 				PREBINDING = NO;
-				PRODUCT_NAME = GLGravity;
+				PRODUCT_NAME = "___PROJECTNAME___";
 				WARNING_CFLAGS = "-Wall";
 			};
 			name = Release;
