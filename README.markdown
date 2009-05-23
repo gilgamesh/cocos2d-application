@@ -1,4 +1,5 @@
-cocos2d-iphone (0.7.2) Xcode Template
+=====================================
+cocos2d-iphone (0.7.3) Xcode Template
 =====================================
 
 I have Xcode for iPhone OS 2.0 in /Developer
