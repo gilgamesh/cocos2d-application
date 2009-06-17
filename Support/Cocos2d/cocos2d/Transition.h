@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -32,9 +32,10 @@ typedef enum {
 /** Base class for Transition scenes
  */
 @interface TransitionScene : Scene {
-	Scene * inScene;
-	Scene * outScene;
-	ccTime duration;	
+	Scene	*inScene;
+	Scene	*outScene;
+	ccTime	duration;
+	BOOL	inSceneOnTop;
 }
 /** creates a base transition with duration and incoming scene */
 +(id) transitionWithDuration:(ccTime) t scene:(Scene*)s;

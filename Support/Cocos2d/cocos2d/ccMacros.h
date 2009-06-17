@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -26,6 +26,14 @@
 #define CCLOG(...) do {} while (0)
 #endif
 
+//simple macro that swaps 2 variables
+#define CC_SWAP( x, y )			\
+({ __typeof__(x) temp  = (x);		\
+		x = y; y = temp;		\
+})
+
+
+
 
 /// returns a random float between -1 and 1
 #define CCRANDOM_MINUS1_1() ((random() / (float)0x3fffffff )-1.0f)
@@ -40,7 +48,8 @@
 #define CC_RADIANS_TO_DEGREES(__ANGLE__) ((__ANGLE__) / (float)M_PI * 180.0f)
 
 /// default gl blend src function
-#define CC_BLEND_SRC GL_SRC_ALPHA
+//#define CC_BLEND_SRC GL_SRC_ALPHA
+#define CC_BLEND_SRC GL_ONE
 /// default gl blend dst function
 #define CC_BLEND_DST GL_ONE_MINUS_SRC_ALPHA
 

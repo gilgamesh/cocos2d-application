@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -17,11 +17,15 @@
  
 // cocos2d imports
 #import "Director.h"
+#import "TouchDelegateProtocol.h"
 #import "Camera.h"
 #import "Scheduler.h"
 #import "LabelAtlas.h"
 #import "ccMacros.h"
 #import "ccExceptions.h"
+#import "Transition.h"
+#import "Scene.h"
+#import "TouchDispatcher.h"
 
 // support imports
 #import "Support/glu.h"
@@ -56,10 +60,11 @@
 
 @synthesize animationInterval;
 @synthesize runningScene = runningScene_;
-@synthesize displayFPS, eventsEnabled;
+@synthesize displayFPS;
 @synthesize openGLView=openGLView_;
 @synthesize pixelFormat=pixelFormat_;
 @synthesize nextDeltaTimeZero=nextDeltaTimeZero_;
+@synthesize deviceOrientation=deviceOrientation_;
 
 //
 // singleton stuff
@@ -113,22 +118,18 @@ static Director *_sharedDirector = nil;
 	nextScene = nil;
 	
 	oldAnimationInterval = animationInterval = 1.0 / kDefaultFPS;
-	eventHandlers = [[NSMutableArray arrayWithCapacity:8] retain];
 	scenesStack_ = [[NSMutableArray arrayWithCapacity:10] retain];
 	
 	// landscape
-	landscape = NO;
-	
+	deviceOrientation_ = CCDeviceOrientationPortrait;
+
 	// FPS
 	displayFPS = NO;
 	frames = 0;
 	
 	// paused ?
 	paused = NO;
-	
-	// touch events enabled ?
-	eventsEnabled = YES;
-	
+
 	return self;
 }
 
@@ -139,7 +140,6 @@ static Director *_sharedDirector = nil;
 #ifdef FAST_FPS_DISPLAY
 	[FPSLabel release];
 #endif
-	[eventHandlers release];
 	[runningScene_ release];
 	[scenesStack_ release];
 	
@@ -190,7 +190,7 @@ static Director *_sharedDirector = nil;
 	if( displayFPS )
 		[self showFPS];
 	
-		glPopMatrix();
+	glPopMatrix();
 	
 	/* swap buffers */
 	[openGLView_ swapBuffers];	
@@ -201,11 +201,9 @@ static Director *_sharedDirector = nil;
 	struct timeval now;
 	
 	if( gettimeofday( &now, NULL) != 0 ) {
-		NSException* myException = [NSException
-									exceptionWithName:@"GetTimeOfDay"
-									reason:@"GetTimeOfDay abnormal error"
-									userInfo:nil];
-		@throw myException;
+		CCLOG(@"error in gettimeofday");
+		dt = 0;
+		return;
 	}
 	
 	// new delta time
@@ -431,7 +429,7 @@ static Director *_sharedDirector = nil;
 		[openGLView_ setAutoresizesEAGLSurface:YES];
 		
 		// set the touch delegate of the glview to self
-		[openGLView_ setTouchDelegate:self];
+		[openGLView_ setTouchDelegate: [TouchDispatcher sharedDispatcher]];
 	}
 	else
 	{
@@ -443,12 +441,12 @@ static Director *_sharedDirector = nil;
 	if([view isUserInteractionEnabled])
 	{
 		[openGLView_ setUserInteractionEnabled:YES];
-		[self setEventsEnabled:YES];
+		[[TouchDispatcher sharedDispatcher] setDispatchEvents: YES];
 	}
 	else
 	{
 		[openGLView_ setUserInteractionEnabled:NO];
-		[self setEventsEnabled:NO];
+		[[TouchDispatcher sharedDispatcher] setDispatchEvents: NO];
 	}
 	
 	// check if multi touches are enabled and set them
@@ -490,23 +488,25 @@ static Director *_sharedDirector = nil;
 -(CGPoint)convertCoordinate:(CGPoint)p
 {
 	int newY = openGLView_.frame.size.height - p.y;
+	int newX = openGLView_.frame.size.width -p.x;
 	
-	CGPoint ret = ccp( p.x, newY );
-	if( ! landscape )
-	{
-		ret = ret;
-	}
-	else 
-	{
-#ifdef LANDSCAPE_LEFT
-		ret.x = p.y;
-		ret.y = p.x;
-#else
-		ret.x = p.y;
-		ret.y = openGLView_.frame.size.width -p.x;
-#endif // LANDSCAPE_LEFT
-	}
-	
+	CGPoint ret;
+	switch ( deviceOrientation_) {
+		case CCDeviceOrientationPortrait:
+			 ret = ccp( p.x, newY );
+			break;
+		case CCDeviceOrientationPortraitUpsideDown:
+			ret = ccp(newX, p.y);
+			break;
+		case CCDeviceOrientationLandscapeLeft:
+			ret.x = p.y;
+			ret.y = p.x;
+			break;
+		case CCDeviceOrientationLandscapeRight:
+			ret.x = newY;
+			ret.y = newX;
+			break;
+		}
 	return ret;
 }
 
@@ -514,7 +514,7 @@ static Director *_sharedDirector = nil;
 -(CGSize)winSize
 {
 	CGSize s = openGLView_.frame.size;
-	if( landscape ) {
+	if( deviceOrientation_ == CCDeviceOrientationLandscapeLeft || deviceOrientation_ == CCDeviceOrientationLandscapeRight ) {
 		// swap x,y in landscape mode
 		s.width = openGLView_.frame.size.height;
 		s.height = openGLView_.frame.size.width;
@@ -530,39 +530,65 @@ static Director *_sharedDirector = nil;
 
 - (BOOL) landscape
 {
-	return landscape;
+	return deviceOrientation_ == CCDeviceOrientationLandscapeLeft;
 }
 
 - (void) setLandscape: (BOOL) on
 {
-	if( on != landscape ) {
-		landscape = on;
-		if( landscape )
-#ifdef LANDSCAPE_LEFT
-			[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationLandscapeRight animated:NO];
-#else
-			[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationLandscapeLeft animated:NO];
-#endif
-		else
-			[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationPortrait animated:NO];
+	if( on )
+		[self setDeviceOrientation:CCDeviceOrientationLandscapeLeft];
+	else
+		[self setDeviceOrientation:CCDeviceOrientationPortrait];
+}
 
+- (void) setDeviceOrientation:(ccDeviceOrientation) orientation
+{
+	if( deviceOrientation_ != orientation ) {
+		deviceOrientation_ = orientation;
+		switch( deviceOrientation_) {
+			case CCDeviceOrientationPortrait:
+				[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationPortrait animated:NO];
+				break;
+			case CCDeviceOrientationPortraitUpsideDown:
+				[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationPortrait animated:NO];
+				break;
+			case CCDeviceOrientationLandscapeLeft:
+				[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationLandscapeRight animated:NO];
+				break;
+			case CCDeviceOrientationLandscapeRight:
+				[[UIApplication sharedApplication] setStatusBarOrientation: UIInterfaceOrientationLandscapeLeft animated:NO];
+				break;
+			default:
+				NSLog(@"Director: Unknown device orientation");
+				break;
+		}
 	}
-	return;
 }
 
 -(void) applyLandscape
-{
-	if( landscape ) {
-		glTranslatef(160,240,0);
-		
-#ifdef LANDSCAPE_LEFT
-		glRotatef(-90,0,0,1);
-		glTranslatef(-240,-160,0);
-#else		
-		// rotate left
-		glRotatef(90,0,0,1);
-		glTranslatef(-240,-160,0);
-#endif // LANDSCAPE_LEFT
+{	
+	// XXX it's using hardcoded values.
+	// What if the the screen size changes in the future?
+	switch ( deviceOrientation_ ) {
+		case CCDeviceOrientationPortrait:
+			// nothing
+			break;
+		case CCDeviceOrientationPortraitUpsideDown:
+			// upside down
+			glTranslatef(160,240,0);
+			glRotatef(180,0,0,1);
+			glTranslatef(-160,-240,0);
+			break;
+		case CCDeviceOrientationLandscapeRight:
+			glTranslatef(160,240,0);
+			glRotatef(90,0,0,1);
+			glTranslatef(-240,-160,0);
+			break;
+		case CCDeviceOrientationLandscapeLeft:
+			glTranslatef(160,240,0);
+			glRotatef(-90,0,0,1);
+			glTranslatef(-240,-160,0);
+			break;
 	}	
 }
 
@@ -622,28 +648,30 @@ static Director *_sharedDirector = nil;
 
 	// don't release the event handlers
 	// They are needed in case the director is run again
-	[eventHandlers removeAllObjects];
+	[[TouchDispatcher sharedDispatcher] removeAllDelegates];
 
 	[self stopAnimation];
 	[self detach];
-	
-
-	// dont call terminate
-	// an application might want to kill the director
-	// without quiting the application
-//	if( [[UIApplication sharedApplication] respondsToSelector:@selector(terminate)] )
-//		[[UIApplication sharedApplication] performSelector:@selector(terminate)];
 }
 
 -(void) setNextScene
 {
-	[runningScene_ onExit];
+	BOOL runningIsTransition = [runningScene_ isKindOfClass:[TransitionScene class]];
+	BOOL newIsTransition = [nextScene isKindOfClass:[TransitionScene class]];
+
+	// If it is not a transition, call onExit
+	if( ! newIsTransition )
+		[runningScene_ onExit];
+
 	[runningScene_ release];
 	
 	runningScene_ = [nextScene retain];
 	nextScene = nil;
 
-	[runningScene_ onEnter];
+	if( ! runningIsTransition ) {
+		[runningScene_ onEnter];
+		[runningScene_ onEnterTransitionDidFinish];
+	}
 }
 
 -(void) pause
@@ -689,8 +717,6 @@ static Director *_sharedDirector = nil;
 		@throw myException;
 	}
 	
-	
-
 	animationTimer = [NSTimer scheduledTimerWithTimeInterval:animationInterval target:self selector:@selector(mainLoop) userInfo:nil repeats:YES];
 
 //
@@ -717,81 +743,6 @@ static Director *_sharedDirector = nil;
 		[self startAnimation];
 	}
 }
-
-#pragma mark Director Events
-
--(void) addEventHandler:(id<TouchEventsDelegate>) delegate
-{
-	NSAssert( delegate != nil, @"Director.addEventHandler: delegate must be non nil");	
-	[eventHandlers insertObject:delegate atIndex:0];
-}
-
--(void) removeEventHandler:(id<TouchEventsDelegate>) delegate
-{
-	NSAssert( delegate != nil, @"Director.removeEventHandler: delegate must be non nil");
-	[eventHandlers removeObject:delegate];
-}
-
-//
-// multi touch proxies
-//
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
-{
-	if( eventsEnabled ) {
-		NSArray *copyArray = [eventHandlers copy];
-		for( id eventHandler in copyArray ) {
-			if( [eventHandler respondsToSelector:@selector(ccTouchesBegan:withEvent:)] ) {
-				if( [eventHandler ccTouchesBegan:touches withEvent:event] == kEventHandled )
-					break;
-			}
-		}
-		
-		[copyArray release];
-	}	
-}
-
-- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
-{
-	if( eventsEnabled ) {
-		NSArray *copyArray = [eventHandlers copy];
-		for( id eventHandler in copyArray ) {
-			if( [eventHandler respondsToSelector:@selector(ccTouchesMoved:withEvent:)] ) {
-				if( [eventHandler ccTouchesMoved:touches withEvent:event] == kEventHandled )
-					break;
-			}
-		}
-		[copyArray release];
-	}
-}
-
-- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
-{
-	if( eventsEnabled ) {
-		NSArray *copyArray = [eventHandlers copy];
-		for( id eventHandler in copyArray ) {
-			if( [eventHandler respondsToSelector:@selector(ccTouchesEnded:withEvent:)] ) {
-				if( [eventHandler ccTouchesEnded:touches withEvent:event] == kEventHandled )
-					break;
-			}
-		}
-		[copyArray release];
-	}
-}
-
-- (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
-{
-	if( eventsEnabled )  {
-		NSArray *copyArray = [eventHandlers copy];
-		for( id eventHandler in copyArray ) {
-			if( [eventHandler respondsToSelector:@selector(ccTouchesCancelled:withEvent:)] ) {
-				if( [eventHandler ccTouchesCancelled:touches withEvent:event] == kEventHandled )
-					break;
-			}
-		}
-		[copyArray release];
-	}
-}
-
 
 #ifdef FAST_FPS_DISPLAY
 
@@ -904,6 +855,7 @@ static Director *_sharedDirector = nil;
 	
 		NSAutoreleasePool *loopPool = [NSAutoreleasePool new];
 
+//		while( CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.004f, FALSE) == kCFRunLoopRunHandledSource);
 		while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, TRUE) == kCFRunLoopRunHandledSource);
 
 		if (paused) {
@@ -911,7 +863,8 @@ static Director *_sharedDirector = nil;
 		}
 		
 		[self mainLoop];
-		
+
+//		while( CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0.004f, FALSE) == kCFRunLoopRunHandledSource);
 		while(CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, TRUE) == kCFRunLoopRunHandledSource);
 
 		[loopPool release];

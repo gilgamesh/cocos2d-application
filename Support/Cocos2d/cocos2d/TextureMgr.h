@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -67,6 +67,13 @@
  * In the long term: it will be the same
  */
 -(void) removeAllTextures;
+
+/** Removes unused textures
+ * Textures that have a retain count of 1 will be deleted
+ * It is convinient to call this method after when starting a new Scene
+ * @since v0.8
+ */
+-(void) removeUnusedTextures;
 
 /** Deletes a texture from the Texture Manager
  */

@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -13,21 +13,11 @@
  */
 
 
+//
+#import "ccTypes.h"
+
 // OpenGL related
 #import "Support/EAGLView.h"
-
-// cocos2d related
-#import "Scene.h"
-
-@protocol TouchEventsDelegate;
-
-enum {
-	kEventHandled = YES,
-	kEventIgnored = NO,
-};
-
-// Landscape is right or left ?
-#define LANDSCAPE_LEFT 1
 
 // Fast FPS display. FPS are updated 10 times per second without consuming resources
 // uncomment this line to use the old method that updated
@@ -46,12 +36,25 @@ typedef enum {
    kDepthBuffer24,
 } tDepthBufferFormat;
 
+/** Possible device orientations */
+typedef enum {
+	/// Device oriented vertically, home button on the bottom
+	CCDeviceOrientationPortrait = UIDeviceOrientationPortrait,	
+	/// Device oriented vertically, home button on the top
+    CCDeviceOrientationPortraitUpsideDown = UIDeviceOrientationPortraitUpsideDown,
+	/// Device oriented horizontally, home button on the right
+    CCDeviceOrientationLandscapeLeft = UIDeviceOrientationLandscapeLeft,
+	/// Device oriented horizontally, home button on the left
+    CCDeviceOrientationLandscapeRight = UIDeviceOrientationLandscapeRight,
+} ccDeviceOrientation;
+
 @class LabelAtlas;
+@class Scene;
 
 /**Class that creates and handle the main Window and manages how
 and when to execute the Scenes
 */
-@interface Director : NSObject <EAGLTouchDelegate>
+@interface Director : NSObject
 {
 	EAGLView	*openGLView_;
 
@@ -65,6 +68,9 @@ and when to execute the Scenes
 
 	/* landscape mode ? */
 	BOOL landscape;
+	
+	/* orientation */
+	ccDeviceOrientation	deviceOrientation_;
 	
 	/* display FPS ? */
 	BOOL displayFPS;
@@ -84,9 +90,6 @@ and when to execute the Scenes
 	/* will be the next 'runningScene' in the next frame
 	 nextScene is a weak reference. */
 	Scene *nextScene;
-	
-	/* event handler */
-	NSMutableArray	*eventHandlers;
 
 	/* scheduled scenes */
 	NSMutableArray *scenesStack_;
@@ -96,10 +99,7 @@ and when to execute the Scenes
 	/* delta time since last tick to main loop */
 	ccTime dt;
 	/* whether or not the next delta time will be zero */
-	BOOL nextDeltaTimeZero_;
-	
-	/* are touch events enabled. Default is YES */
-	BOOL eventsEnabled;
+	BOOL nextDeltaTimeZero_;	
 }
 
 /** The current running Scene. Director can only run one Scene at the time */
@@ -108,14 +108,14 @@ and when to execute the Scenes
 @property (readwrite, assign) NSTimeInterval animationInterval;
 /** Whether or not to display the FPS on the bottom-left corner */
 @property (readwrite, assign) BOOL displayFPS;
-/** Whether or not to propagate the touch events to the running Scene. Default YES */
-@property (readwrite, assign) BOOL eventsEnabled;
 /** The OpenGL view */
 @property (readonly) EAGLView *openGLView;
 /** Pixel format used to create the context */
 @property (readonly) tPixelFormat pixelFormat;
 /** whether or not the next delta time will be zero */
 @property (readwrite,assign) BOOL nextDeltaTimeZero;
+/** The device orientattion */
+@property (readwrite) ccDeviceOrientation deviceOrientation;
 
 /** returns a shared instance of the director */
 +(Director *)sharedDirector;
@@ -160,10 +160,15 @@ and when to execute the Scenes
 /** returns the display size of the OpenGL view */
 -(CGSize) displaySize;
 
-/** returns whether or not the screen is in landscape mode */
-- (BOOL) landscape;
-/** sets lanscape mode */
-- (void) setLandscape: (BOOL) on;
+/** returns whether or not the screen is in landscape mode
+ @deprecated Use deviceOrientation instead
+ */
+- (BOOL) landscape __attribute__((deprecated));
+/** sets lanscape mode
+ @deprecated Use setDeviceOrientation instead
+ */
+- (void) setLandscape: (BOOL) on __attribute__((deprecated));
+
 /** converts a UIKit coordinate to an OpenGL coordinate
  Useful to convert (multi) touchs coordinates to the current layout (portrait or landscape)
  */
@@ -223,13 +228,6 @@ and when to execute the Scenes
 -(void) startAnimation;
 
 
-// Events
-
-/** adds a delegate to the list of multi-touch handlers */
--(void) addEventHandler: (id<TouchEventsDelegate>) delegate;
-/** removes a delegate from the list of multi-touch handlers */
--(void) removeEventHandler: (id<TouchEventsDelegate>) delegate;
-
 // OpenGL Helper
 
 /** enables/disables OpenGL alpha blending */
@@ -248,7 +246,6 @@ and when to execute the Scenes
 
 /** FastDirector is a Director that triggers the main loop as fast as possible.
  * In some circumstances it is faster than the normal Director.
- @warning BUG: Don't use the FastDirector if you are going the detach and then re-attach the opengl view again.
  */
 @interface FastDirector : Director
 {

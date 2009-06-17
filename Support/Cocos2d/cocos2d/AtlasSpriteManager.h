@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2009 Matt Oswald
  *
@@ -24,20 +24,23 @@
  * that belongs to this Manager. Use 1 AtlasSpriteManager per TextureAtlas
 *
  * Limitations:
- *  - The only object that is accepted as children are AtlasSprite
- *  - It's children are all Aliased or all Antialiased. They can't be some Aliased and some Antialiased
+ *  - The only object that is accepted as child is AtlasSprite
+ *  - It's children are all Aliased or all Antialiased.
  * 
  * @since v0.7.1
  */
-@interface AtlasSpriteManager : CocosNode
+@interface AtlasSpriteManager : CocosNode <CocosNodeTexture>
 {
-@private
 	unsigned int totalSprites_;
 	TextureAtlas *textureAtlas_;
+	ccBlendFunc	blendFunc_;
 }
 
 /** returns the TextureAtlas that is used */
-@property (readonly) TextureAtlas * atlas;
+@property (readwrite,retain) TextureAtlas * textureAtlas;
+
+/** conforms to CocosNodeTexture protocol */
+@property (readwrite) ccBlendFunc blendFunc;
 
 /** creates an AtlasSpriteManager with a texture2d */
 +(id)spriteManagerWithTexture:(Texture2D *)tex;

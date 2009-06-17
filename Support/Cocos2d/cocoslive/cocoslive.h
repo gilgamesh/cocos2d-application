@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
@@ -14,8 +14,8 @@
 
 
 // 0x00 HI ME LO
-// 00   00 02 00
-#define COCOSLIVE_VERSION 0x00000200
+// 00   00 03 02
+#define COCOSLIVE_VERSION 0x00000302
 
 // to use localserver. DEBUG ONLY
 //#define USE_LOCAL_SERVER 1

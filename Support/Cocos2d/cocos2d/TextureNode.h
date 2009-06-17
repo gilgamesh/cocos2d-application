@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -20,32 +20,35 @@
 #import "CocosNode.h"
 
 
-/** TextureNode is a subclass of CocosNode that implements the CocosNodeOpacity,
- * CocosNodeRGB and CocosNodeSize protocol.
+/** TextureNode is a subclass of CocosNode that implements the CocosNodeRGBA
+ * and CocosNodeTexture protocol.
  *
  * As the name implies it, it knows how to render a textures.
  *
  * All features from CocosNode are valid, plus the following new features:
- *  - opacity
- *  - contentSize
- *  - RGB (setRGB:::)
+ *  - opacity and RGB
  *  - texture (can be Aliased or AntiAliased)
  */
-@interface TextureNode : CocosNode <CocosNodeOpacity, CocosNodeRGB, CocosNodeSize> {
+@interface TextureNode : CocosNode <CocosNodeRGBA, CocosNodeTexture> {
 
-	/// texture
-	Texture2D *texture;
+	// texture
+	Texture2D *texture_;
+
+	// blend func
+	ccBlendFunc	blendFunc_;
 	
-	/// texture opacity
-	GLubyte opacity;
+	// texture RGBA
+	GLubyte	r_,g_,b_,opacity_;
+	BOOL opacityModifyRGB_;
 	
-	/// texture color
-	GLubyte	r,g,b;
 }
 
-/** The texture that is rendered */
+/** conforms to CocosNodeTexture protocol */
 @property (readwrite,retain) Texture2D *texture;
 
-/** conforms to CocosNodeOpacity and CocosNodeRGB protocol */
-@property (readwrite,assign) GLubyte r, g, b, opacity;
+/** conforms to CocosNodeTexture protocol */
+@property (readwrite) ccBlendFunc blendFunc;
+
+/** conforms to CocosNodeRGBA protocol */
+@property (readonly) GLubyte r, g, b, opacity;
 @end

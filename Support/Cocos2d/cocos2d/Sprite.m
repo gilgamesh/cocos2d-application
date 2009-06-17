@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008 Ricardo Quesada
  *
@@ -26,8 +26,6 @@
 
 @implementation Sprite
 
-@synthesize autoCenterFrames = _autoCenterFrames;
-
 #pragma mark Sprite - image file
 + (id) spriteWithFile:(NSString*) filename
 {
@@ -41,34 +39,6 @@
 		// texture is retained
 		self.texture = [[TextureMgr sharedTextureMgr] addImage: filename];
 		
-		CGSize s = self.texture.contentSize;
-		transformAnchor = ccp(s.width/2, s.height/2);
-		_autoCenterFrames = NO;
-		
-		// lazy alloc
-		animations = nil;
-	}
-	
-	return self;
-}
-
-#pragma mark Sprite - PVRTC RAW
-
-+ (id) spriteWithPVRTCFile: (NSString*) fileimage bpp:(int)bpp hasAlpha:(BOOL)alpha width:(int)w
-{
-	return [[[self alloc] initWithPVRTCFile:fileimage bpp:bpp hasAlpha:alpha width:w] autorelease];
-}
-
-- (id) initWithPVRTCFile: (NSString*) fileimage bpp:(int)bpp hasAlpha:(BOOL)alpha width:(int)w
-{
-	if((self=[super init])) {
-		// texture is retained
-		self.texture = [[TextureMgr sharedTextureMgr] addPVRTCImage:fileimage bpp:bpp hasAlpha:alpha width:w];
-		
-		CGSize s = self.texture.contentSize;
-		transformAnchor = ccp(s.width/2, s.height/2);
-		_autoCenterFrames = NO;
-
 		// lazy alloc
 		animations = nil;
 	}
@@ -89,10 +59,6 @@
 	if( self ) {
 		// texture is retained
 		self.texture = [[TextureMgr sharedTextureMgr] addCGImage: image];
-		
-		CGSize s = self.texture.contentSize;
-		transformAnchor = ccp(s.width/2, s.height/2);
-		_autoCenterFrames = NO;
 
 		// lazy alloc
 		animations = nil;
@@ -113,23 +79,12 @@
 	if( (self = [super init]) ) {
 		// texture is retained
 		self.texture = tex;
-		
-		CGSize s = self.texture.contentSize;
-		transformAnchor = ccp(s.width/2, s.height/2);
-		_autoCenterFrames = NO;
-		
+
 		// lazy alloc
 		animations = nil;
 	}
 	return self;
 }	
-
-#pragma mark Sprite - TextureNode override
-
--(void) setTexture: (Texture2D *) aTexture
-{
-	super.texture = aTexture;
-}
 
 #pragma mark Sprite
 
@@ -150,11 +105,6 @@
 -(void) setDisplayFrame:(id)frame
 {
 	self.texture = frame;
-	
-	if( _autoCenterFrames ) {
-		CGSize s = self.texture.contentSize;
-		self.transformAnchor = ccp(s.width/2, s.height/2);
-	}
 }
 
 -(void) setDisplayFrame: (NSString*) animationName index:(int) frameIndex
@@ -164,21 +114,16 @@
 	
 	Animation *a = [animations objectForKey: animationName];
 	Texture2D *frame = [[a frames] objectAtIndex:frameIndex];
-	self.texture = frame;
-	
-	if( _autoCenterFrames ) {
-		CGSize s = self.texture.contentSize;
-		self.transformAnchor = ccp(s.width/2, s.height/2);
-	}	
+	self.texture = frame;	
 }
 
 -(BOOL) isFrameDisplayed:(id)frame
 {
-	return texture == frame;
+	return texture_ == frame;
 }
 -(id) displayFrame
 {
-	return texture;
+	return texture_;
 }
 -(void) addAnimation: (id<CocosAnimation>) anim
 {
@@ -256,10 +201,6 @@
 	return self;
 }
 
--(void) addFrame: (NSString*) filename
-{
-	return [self addFrameWithFilename:filename];
-}
 -(void) addFrameWithFilename: (NSString*) filename
 {
 	Texture2D *tex = [[TextureMgr sharedTextureMgr] addImage: filename];

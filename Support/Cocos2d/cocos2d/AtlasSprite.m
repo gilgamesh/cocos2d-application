@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2009 Matt Oswald
  *
@@ -30,10 +30,11 @@ enum {
 
 @implementation AtlasSprite
 
-@synthesize dirtyColor, dirtyPosition;
+@synthesize dirty;
+@synthesize quad = quad_;
 @synthesize atlasIndex = atlasIndex_;
 @synthesize textureRect = rect_;
-@synthesize autoCenterFrames = autoCenterFrames_;
+@synthesize opacity=opacity_, r=r_, g=g_, b=b_;
 
 +(id)spriteWithRect:(CGRect)rect spriteManager:(AtlasSpriteManager*)manager
 {
@@ -43,21 +44,28 @@ enum {
 -(id)initWithRect:(CGRect)rect spriteManager:(AtlasSpriteManager*)manager
 {
 	if( (self = [super init])) {
-		textureAtlas_ = [manager atlas];	// weak reference. Don't release
+		textureAtlas_ = [manager textureAtlas];	// weak reference. Don't release
+		
+		opacityModifyRGB_ = [[textureAtlas_ texture] hasPremultipliedAlpha];
 		
 		atlasIndex_ = kIndexNotInitialized;
 
-		dirtyPosition = YES;
-		dirtyColor = NO;			// optimization. If the color is not changed gl_color_array is not send to the GPU
+		dirty = YES;
 		
-		// RGB and opacity
-		r_ = g_ = b_ = opacity_ = 255;
-		
-		animations = nil;		// lazy alloc
+		flipY_ = flipX_ = NO;
 		
 		// default transform anchor: center
-		transformAnchor = ccp( rect.size.width / 2, rect.size.height /2 );		
-		autoCenterFrames_ = NO;
+		anchorPoint_ = ccp(0.5f, 0.5f);
+
+		// RGB and opacity
+		r_ = g_ = b_ = opacity_ = 255;
+		ccColor4B tmpColor = {255,255,255,255};
+		quad_.bl.colors = tmpColor;
+		quad_.br.colors = tmpColor;
+		quad_.tl.colors = tmpColor;
+		quad_.tr.colors = tmpColor;
+		
+		animations = nil;		// lazy alloc
 		
 		[self setTextureRect:rect];
 	}
@@ -88,16 +96,15 @@ enum {
 	[self updateTextureCoords];
 	
 	// Don't update Atlas if index == -1. issue #283
-	if( atlasIndex_ != kIndexNotInitialized)
-		[self updateAtlas];
+	if( atlasIndex_ == kIndexNotInitialized)
+		dirty = YES;
 	else
-		dirtyPosition = YES;
-	
-	// add these lines	
-	if( autoCenterFrames_ ) {
-		self.transformAnchor = ccp(rect.size.width/2, rect.size.height/2);
-		dirtyPosition = YES;
-	}	
+		[textureAtlas_ updateQuad:&quad_ atIndex:atlasIndex_];
+
+	if( ! CGSizeEqualToSize(rect.size, contentSize_))  {
+		[self setContentSize:rect.size];
+		dirty = YES;
+	}
 }
 
 -(void)updateTextureCoords
@@ -110,21 +117,21 @@ enum {
 	float top = rect_.origin.y / atlasHeight;
 	float bottom = (rect_.origin.y + rect_.size.height) / atlasHeight;
 
-	ccQuad2 newCoords = {
-		left, bottom,
-		right, bottom,
-		left, top,
-		right, top,
-	};
+	
+	if( flipX_)
+		CC_SWAP(left,right);
+	if( flipY_)
+		CC_SWAP(top,bottom);
+	
+	quad_.bl.texCoords.u = left;
+	quad_.bl.texCoords.v = bottom;
+	quad_.br.texCoords.u = right;
+	quad_.br.texCoords.v = bottom;
+	quad_.tl.texCoords.u = left;
+	quad_.tl.texCoords.v = top;
+	quad_.tr.texCoords.u = right;
+	quad_.tr.texCoords.v = top;
 
-	texCoords_ = newCoords;
-}
-
--(void) updateColor
-{
-	ccColorB colorQuad = { r_, g_, b_, opacity_};
-	[textureAtlas_ updateColorWithColorQuad:&colorQuad atIndex:atlasIndex_];
-	dirtyColor = NO;
 }
 
 -(void)updatePosition
@@ -134,27 +141,21 @@ enum {
 	// if not visible
 	// then everything is 0
 	if( ! visible ) {		
-		ccQuad3 newVertices = {
-			0,0,0,
-			0,0,0,
-			0,0,0,
-			0,0,0,			
-		};
-		
-		vertexCoords_ = newVertices;
+		quad_.br.vertices = quad_.tl.vertices = quad_.tr.vertices = quad_.bl.vertices = (ccVertex3F){0,0,0};
+
 	}
 	
 	// rotation ? -> update: rotation, scale, position
-	else if( rotation ) {
-		float x1 = -transformAnchor.x * scaleX;
-		float y1 = -transformAnchor.y * scaleY;
+	else if( rotation_ ) {
+		float x1 = -transformAnchor_.x * scaleX_;
+		float y1 = -transformAnchor_.y * scaleY_;
 
-		float x2 = x1 + rect_.size.width * scaleX;
-		float y2 = y1 + rect_.size.height * scaleY;
-		float x = position.x;
-		float y = position.y;
+		float x2 = x1 + rect_.size.width * scaleX_;
+		float y2 = y1 + rect_.size.height * scaleY_;
+		float x = position_.x;
+		float y = position_.y;
 		
-		float r = (float)-CC_DEGREES_TO_RADIANS(rotation);
+		float r = -CC_DEGREES_TO_RADIANS(rotation_);
 		float cr = cosf(r);
 		float sr = sinf(r);
 		float ax = x1 * cr - y1 * sr + x;
@@ -165,68 +166,55 @@ enum {
 		float cy = x2 * sr + y2 * cr + y;
 		float dx = x1 * cr - y2 * sr + x;
 		float dy = x1 * sr + y2 * cr + y;
-
-		ccQuad3 newVertices = 
-					{(int)ax, (int)ay, 0,
-					(int)bx, (int)by, 0,
-					(int)dx, (int)dy, 0,
-					(int)cx, (int)cy, 0};
-		vertexCoords_ = newVertices;		
+		quad_.bl.vertices = (ccVertex3F) { (int)ax, (int)ay, vertexZ_ };
+		quad_.br.vertices = (ccVertex3F) { (int)bx, (int)by, vertexZ_ };
+		quad_.tl.vertices = (ccVertex3F) { (int)dx, (int)dy, vertexZ_ };
+		quad_.tr.vertices = (ccVertex3F) { (int)cx, (int)cy, vertexZ_ };
+		
 	}
 	
 	// scale ? -> update: scale, position
-	else if(scaleX != 1 || scaleY != 1)
+	else if(scaleX_ != 1 || scaleY_ != 1)
 	{
-		float x = position.x;
-		float y = position.y;
+		float x = position_.x;
+		float y = position_.y;
 		
-		float x1 = (x- transformAnchor.x * scaleX);
-		float y1 = (y- transformAnchor.y * scaleY);
-		float x2 = (x1 + rect_.size.width * scaleX);
-		float y2 = (y1 + rect_.size.height * scaleY);
-		ccQuad3 newVertices = {
-			(int)x1,(int)y1,0,
-			(int)x2,(int)y1,0,
-			(int)x1,(int)y2,0,
-			(int)x2,(int)y2,0,
-		};
+		float x1 = (x- transformAnchor_.x * scaleX_);
+		float y1 = (y- transformAnchor_.y * scaleY_);
+		float x2 = (x1 + rect_.size.width * scaleX_);
+		float y2 = (y1 + rect_.size.height * scaleY_);
 
-		vertexCoords_ = newVertices;	
+		quad_.bl.vertices = (ccVertex3F) { (int)x1, (int)y1, vertexZ_ };
+		quad_.br.vertices = (ccVertex3F) { (int)x2, (int)y1, vertexZ_ };
+		quad_.tl.vertices = (ccVertex3F) { (int)x1, (int)y2, vertexZ_ };
+		quad_.tr.vertices = (ccVertex3F) { (int)x2, (int)y2, vertexZ_ };
 	}
 	
 	// update position
 	else {
-		float x = position.x;
-		float y = position.y;
+		float x = position_.x;
+		float y = position_.y;
 		
-		float x1 = (x-transformAnchor.x);
-		float y1 = (y-transformAnchor.y);
+		float x1 = (x-transformAnchor_.x);
+		float y1 = (y-transformAnchor_.y);
 		float x2 = (x1 + rect_.size.width);
 		float y2 = (y1 + rect_.size.height);
-		ccQuad3 newVertices = {
-			(int)x1,(int)y1,0,
-			(int)x2,(int)y1,0,
-			(int)x1,(int)y2,0,
-			(int)x2,(int)y2,0,
-		};
-		
-		vertexCoords_ = newVertices;
+
+		quad_.bl.vertices = (ccVertex3F) { (int)x1, (int)y1, vertexZ_ };
+		quad_.br.vertices = (ccVertex3F) { (int)x2, (int)y1, vertexZ_ };
+		quad_.tl.vertices = (ccVertex3F) { (int)x1, (int)y2, vertexZ_ };
+		quad_.tr.vertices = (ccVertex3F) { (int)x2, (int)y2, vertexZ_ };
 	}
-
-	[textureAtlas_ updateQuadWithTexture:&texCoords_ vertexQuad:&vertexCoords_ atIndex:atlasIndex_];
-	dirtyPosition = NO;
+	
+	[textureAtlas_ updateQuad:&quad_ atIndex:atlasIndex_];
+	dirty = NO;
 	return;
-}
-
--(void)updateAtlas
-{
-	[textureAtlas_ updateQuadWithTexture:&texCoords_ vertexQuad:&vertexCoords_ atIndex:atlasIndex_];
 }
 
 -(void)insertInAtlasAtIndex:(NSUInteger)index
 {
 	atlasIndex_ = index;
-	[textureAtlas_ insertQuadWithTexture:&texCoords_ vertexQuad:&vertexCoords_ atIndex:atlasIndex_];
+	[textureAtlas_ insertQuad:&quad_ atIndex:atlasIndex_];
 }
 
 //
@@ -236,37 +224,43 @@ enum {
 -(void)setPosition:(CGPoint)pos
 {
 	[super setPosition:pos];
-	dirtyPosition = YES;
+	dirty = YES;
 }
 
 -(void)setRotation:(float)rot
 {
 	[super setRotation:rot];
-	dirtyPosition = YES;
+	dirty = YES;
 }
 
 -(void)setScaleX:(float) sx
 {
 	[super setScaleX:sx];
-	dirtyPosition = YES;
+	dirty = YES;
 }
 
 -(void)setScaleY:(float) sy
 {
 	[super setScaleY:sy];
-	dirtyPosition = YES;
+	dirty = YES;
 }
 
 -(void)setScale:(float) s
 {
 	[super setScale:s];
-	dirtyPosition = YES;
+	dirty = YES;
 }
 
--(void)setTransformAnchor:(CGPoint)anchor
+-(void) setVertexZ:(float)z
 {
-	[super setTransformAnchor:anchor];
-	dirtyPosition = YES;
+	[super setVertexZ:z];
+	dirty = YES;
+}
+
+-(void)setAnchorPoint:(CGPoint)anchor
+{
+	[super setAnchorPoint:anchor];
+	dirty = YES;
 }
 
 -(void)setRelativeTransformAnchor:(BOOL)relative
@@ -277,7 +271,31 @@ enum {
 -(void)setVisible:(BOOL)v
 {
 	[super setVisible:v];
-	dirtyPosition = YES;
+	dirty = YES;
+}
+
+-(void)setFlipX:(BOOL)b
+{
+	if( flipX_ != b ) {
+		flipX_ = b;
+		[self setTextureRect:rect_];
+	}
+}
+-(BOOL) flipX
+{
+	return flipX_;
+}
+
+-(void) setFlipY:(BOOL)b
+{
+	if( flipY_ != b ) {
+		flipY_ = b;	
+		[self setTextureRect:rect_];
+	}	
+}
+-(BOOL) flipY
+{
+	return flipY_;
 }
 
 //
@@ -290,52 +308,60 @@ enum {
 }
 
 //
-// Opacity protocol
+// RGBA protocol
 //
+#pragma mark AtlasSprite - RGBA protocol
+-(void) updateColor
+{
+	if( atlasIndex_ != kIndexNotInitialized)
+		[textureAtlas_ updateQuad:&quad_ atIndex:atlasIndex_];
+	else
+		dirty = YES;
+}
 -(void) setOpacity:(GLubyte) anOpacity
 {
 	opacity_ = anOpacity;
-	dirtyColor = YES;
-}
--(GLubyte)opacity
-{
-	return opacity_;
+	
+	// special opacity for premultiplied textures
+	if( opacityModifyRGB_ )
+		r_ = g_ = b_ = opacity_;
+
+	ccColor4B color = (ccColor4B) {r_, g_, b_, opacity_ };
+
+	quad_.bl.colors = color;
+	quad_.br.colors = color;
+	quad_.tl.colors = color;
+	quad_.tr.colors = color;
+
+	[self updateColor];
 }
 
-//
-// RGB protocol
-//
 -(void) setRGB: (GLubyte)r :(GLubyte)g :(GLubyte)b
 {
 	r_ = r;
 	g_ = g;
 	b_ = b;
-	dirtyColor = YES;
+	ccColor4B color = {r_, g_, b_, opacity_ };
+	quad_.bl.colors = color;
+	quad_.br.colors = color;
+	quad_.tl.colors = color;
+	quad_.tr.colors = color;
+	
+	[self updateColor];
 }
--(GLubyte) r
+-(void) setOpacityModifyRGB:(BOOL)modify
 {
-	return r_;
+	opacityModifyRGB_ = modify;
 }
--(GLubyte) g
+-(BOOL) doesOpacityModifyRGB
 {
-	return g_;
-}
--(GLubyte) b
-{
-	return b_;
-}
-
-//
-// CocosNodeSize protocol
-//
--(CGSize)contentSize
-{
-	return rect_.size;
+	return opacityModifyRGB_;
 }
 
 //
 // CocosNodeFrames protocol
 //
+#pragma mark AtlasSprite - CocosNodeFrames protocol
 -(void) setDisplayFrame:(id)newFrame
 {
 	AtlasSpriteFrame *frame = (AtlasSpriteFrame*)newFrame;

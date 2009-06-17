@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -16,22 +16,7 @@
 #import <UIKit/UIKit.h>
 
 #import "CocosNode.h"
-
-//
-// TouchEventDelegate
-//
-/**Touch event delegate
- * return YES if the event was handled
- * return NO if the event was not handled
- */
-@protocol TouchEventsDelegate <NSObject>
-@optional
-- (BOOL)ccTouchesBegan:(NSSet *)touches withEvent:(UIEvent *)event;
-- (BOOL)ccTouchesMoved:(NSSet *)touches withEvent:(UIEvent *)event;
-- (BOOL)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event;
-- (BOOL)ccTouchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event;
-@end
-
+#import "TouchDelegateProtocol.h"
 
 //
 // Layer
@@ -42,16 +27,21 @@
  - It can receive iPhone Touches
  - It can receive Accelerometer input
 */
-@interface Layer : CocosNode <UIAccelerometerDelegate, TouchEventsDelegate>
+@interface Layer : CocosNode <UIAccelerometerDelegate, StandardTouchDelegate, TargetedTouchDelegate>
 {
-	//! whether or not it will receive Touch events
 	BOOL isTouchEnabled;
-	
-	//! whether or not it will receive Accelerometer events
 	BOOL isAccelerometerEnabled;
 }
 
+/** If isTouchEnabled, this method is called onEnter. Override it to change the
+ way Layer receives touch events.
+ ( Default: [[TouchDispatcher sharedDispatcher] addStandardDelegate:self priority:0] )
+ */
+-(void) registerWithTouchDispatcher;
+
+// whether or not it will receive Touch events
 @property(nonatomic,assign) BOOL isTouchEnabled;
+// whether or not it will receive Accelerometer events
 @property(nonatomic,assign) BOOL isAccelerometerEnabled;
 
 @end
@@ -66,7 +56,7 @@
  - RGB colors
  - contentSize
  */
-@interface ColorLayer : Layer <CocosNodeOpacity, CocosNodeRGB, CocosNodeSize>
+@interface ColorLayer : Layer <CocosNodeRGBA>
 {
 	GLubyte r,g,b,opacity;
 	GLfloat squareVertices[4 * 2];

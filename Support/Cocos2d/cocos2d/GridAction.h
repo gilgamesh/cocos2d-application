@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2009 On-Core
  *
@@ -48,11 +48,11 @@
 }
 
 /** returns the vertex than belongs to certain position in the grid */
--(ccVertex3D)vertex:(ccGridSize)pos;
+-(ccVertex3F)vertex:(ccGridSize)pos;
 /** returns the non-transformed vertex than belongs to certain position in the grid */
--(ccVertex3D)originalVertex:(ccGridSize)pos;
+-(ccVertex3F)originalVertex:(ccGridSize)pos;
 /** sets a new vertex to a certain position of the grid */
--(void)setVertex:(ccGridSize)pos vertex:(ccVertex3D)vertex;
+-(void)setVertex:(ccGridSize)pos vertex:(ccVertex3F)vertex;
 
 @end
 

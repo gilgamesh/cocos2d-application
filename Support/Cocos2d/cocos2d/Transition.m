@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -23,6 +23,7 @@
 #import "Camera.h"
 #import "TiledGridAction.h"
 #import "EaseAction.h"
+#import "TouchDispatcher.h"
 #import "Support/CGPointExtension.h"
 
 enum {
@@ -30,7 +31,7 @@ enum {
 };
 
 @interface TransitionScene (Private)
--(void) addScenes;
+-(void) sceneOrder;
 @end
 
 @implementation TransitionScene
@@ -43,54 +44,44 @@ enum {
 {
 	NSAssert( s != nil, @"Argument scene must be non-nil");
 	
-	if( ! (self=[super init]) )
-		return nil;
+	if( (self=[super init]) ) {
 	
-	duration = t;
-	
-	// Don't retain them, it will be reatined when added
-	inScene = s;
-	outScene = [[Director sharedDirector] runningScene];
-	
-	if( inScene == outScene ) {
-		NSException* myException = [NSException
-									exceptionWithName:@"TransitionWithInvalidScene"
-									reason:@"Incoming scene must be different from the outgoing scene"
-									userInfo:nil];
-		@throw myException;		
-	}
-	
-	// disable events while transitions
-	[[Director sharedDirector] setEventsEnabled: NO];
+		duration = t;
+		
+		// retain
+		inScene = [s retain];
+		outScene = [[Director sharedDirector] runningScene];
+		[outScene retain];
+		
+		if( inScene == outScene ) {
+			NSException* myException = [NSException
+										exceptionWithName:@"TransitionWithInvalidScene"
+										reason:@"Incoming scene must be different from the outgoing scene"
+										userInfo:nil];
+			@throw myException;		
+		}
+		
+		// disable events while transitions
+		[[TouchDispatcher sharedDispatcher] setDispatchEvents: NO];
 
-	[self addScenes];
+		[self sceneOrder];
+	}
 	return self;
 }
-
--(void) addScenes
+-(void) sceneOrder
 {
-	// add both scenes
-	[self addChild: inScene z:1];
-	[self addChild: outScene z:0];
+	inSceneOnTop = YES;
 }
 
--(void) step: (ccTime) dt {
-
-	[self unschedule:_cmd];
-	
-	[[Director sharedDirector] replaceScene: inScene];
-
-	// enable events while transitions
-	[[Director sharedDirector] setEventsEnabled: YES];
-	
-	// issue #267
-	[outScene setVisible:YES];
-
-	[self removeChild:inScene cleanup:NO];
-	[self removeChild:outScene cleanup:NO];
-	
-	inScene = nil;
-	outScene = nil;
+-(void) draw
+{
+	if( inSceneOnTop ) {
+		[outScene visit];
+		[inScene visit];
+	} else {
+		[inScene visit];
+		[outScene visit];
+	}
 }
 
 -(void) finish
@@ -108,10 +99,20 @@ enum {
 	[outScene setRotation:0.0f];
 	[outScene.camera restore];
 	
-//	[inScene stopAllActions];
-//	[outScene stopAllActions];
+	[self schedule:@selector(setNewScene:) interval:0];
+}
 
-	[self schedule:@selector(step:) interval:0];
+-(void) setNewScene: (ccTime) dt
+{	
+	[self unschedule:_cmd];
+	
+	[[Director sharedDirector] replaceScene: inScene];
+	
+	// enable events while transitions
+	[[TouchDispatcher sharedDispatcher] setDispatchEvents: YES];
+	
+	// issue #267
+	[outScene setVisible:YES];	
 }
 
 -(void) hideOutShowIn
@@ -120,9 +121,34 @@ enum {
 	[outScene setVisible:NO];
 }
 
+// custom onEnter
+-(void) onEnter
+{
+	[super onEnter];
+	[inScene onEnter];
+	// outScene should not receive the onEnter callback
+}
+
+// custom onExit
+-(void) onExit
+{
+	[super onExit];
+	[outScene onExit];	
+
+	// inScene should not receive the onExit callback
+	// only the onEnterTransitionDidFinish
+	[inScene onEnterTransitionDidFinish];
+}
+
+-(void) onEnterTransitionDidFinish
+{
+	[super onEnterTransitionDidFinish];
+}
 
 -(void) dealloc
 {
+	[inScene release];
+	[outScene release];
 	[super dealloc];
 }
 @end
@@ -138,9 +164,8 @@ enum {
 
 -(id) initWithDuration:(ccTime) t scene:(Scene*)s orientation:(tOrientation)o
 {
-	if( !(self=[super initWithDuration:t scene:s]) )
-		return nil;
-	orientation = o;
+	if( (self=[super initWithDuration:t scene:s]) )
+		orientation = o;
 	return self;
 }
 @end
@@ -153,13 +178,12 @@ enum {
 -(void) onEnter
 {
 	[super onEnter];
-	CGSize s = [[Director sharedDirector] winSize];
 	
 	[inScene setScale:0.001f];
 	[outScene setScale:1.0f];
 	
-	[inScene setTransformAnchor: ccp( s.width/2, s.height/2) ];
-	[outScene setTransformAnchor: ccp( s.width/2, s.height/2) ];
+	[inScene setAnchorPoint:ccp(0.5f, 0.5f)];
+	[outScene setAnchorPoint:ccp(0.5f, 0.5f)];
 	
 	IntervalAction *rotozoom = [Sequence actions: [Spawn actions:
 								   [ScaleBy actionWithDuration:duration/2 scale:0.001f],
@@ -188,9 +212,9 @@ enum {
 	
 	[inScene setScale:0.5f];
 	[inScene setPosition:ccp( s.width,0 )];
-	
-	[inScene setTransformAnchor: ccp( s.width/2, s.height/2) ];
-	[outScene setTransformAnchor: ccp( s.width/2, s.height/2) ];
+
+	[inScene setAnchorPoint:ccp(0.5f, 0.5f)];
+	[outScene setAnchorPoint:ccp(0.5f, 0.5f)];
 
 	IntervalAction *jump = [JumpBy actionWithDuration:duration/4 position:ccp(-s.width,0) height:s.width/4 jumps:2];
 	IntervalAction *scaleIn = [ScaleTo actionWithDuration:duration/4 scale:1.0f];
@@ -368,14 +392,11 @@ enum {
 {
 	[super onEnter];
 	
-	CGSize s = [[Director sharedDirector] winSize];
-	
 	[inScene setScale:0.001f];
 	[outScene setScale:1.0f];
-	
-	[inScene setTransformAnchor:ccp(2*s.width/3,s.height/2) ];
-	[outScene setTransformAnchor:ccp(s.width/3,s.height/2) ];
-	
+
+	[inScene setAnchorPoint:ccp(2/3.0f,0.5f)];
+	[outScene setAnchorPoint:ccp(1/3.0f,0.5f)];	
 	
 	IntervalAction *scaleOut = [ScaleTo actionWithDuration:duration scale:0.01f];
 	IntervalAction *scaleIn = [ScaleTo actionWithDuration:duration scale:1.0f];
@@ -724,11 +745,9 @@ enum {
 @implementation TurnOffTilesTransition
 
 // override addScenes, and change the order
--(void) addScenes
+-(void) sceneOrder
 {
-	// add both scenes
-	[self addChild: inScene z:0];
-	[self addChild: outScene z:1];
+	inSceneOnTop = NO;
 }
 
 -(void) onEnter
@@ -800,12 +819,9 @@ enum {
 // FadeTR Transition
 //
 @implementation FadeTRTransition
-// override addScenes, and change the order
--(void) addScenes
+-(void) sceneOrder
 {
-	// add both scenes
-	[self addChild: inScene z:0];
-	[self addChild: outScene z:1];
+	inSceneOnTop = NO;
 }
 
 -(void) onEnter

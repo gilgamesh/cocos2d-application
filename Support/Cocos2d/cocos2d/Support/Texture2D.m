@@ -65,7 +65,6 @@ Copyright (C) 2008 Apple Inc. All Rights Reserved.
  * https://devforums.apple.com/message/37855#37855 by a1studmuffin
  */
 
-
 #import <OpenGLES/ES1/glext.h>
 
 #import "Texture2D.h"
@@ -75,20 +74,19 @@ Copyright (C) 2008 Apple Inc. All Rights Reserved.
 //CONSTANTS:
 
 #define kMaxTextureSize	 1024
+//#define kMaxTextureSize		2048
 
 //CLASS IMPLEMENTATIONS:
 
-// If the image has alpha, you can create RGBA8 (32-bit) or RGBA4 (16-bit) or RGB5A1 (16-bit)
-// Default is: RGBA8
-static Texture2DPixelFormat defaultAlphaPixelFormat = kTexture2DPixelFormat_RGBA8888;
 
-// Default Min/Mag texture filter
-static ccTexParams _texParams = { GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE };
-static ccTexParams _texParamsCopy;
+// If the image has alpha, you can create RGBA8 (32-bit) or RGBA4 (16-bit) or RGB5A1 (16-bit)
+// Default is: RGBA4444 (16-bit textures)
+static Texture2DPixelFormat defaultAlphaPixelFormat = kTexture2DPixelFormat_Default;
 
 @implementation Texture2D
 
 @synthesize contentSize=_size, pixelFormat=_format, pixelsWide=_width, pixelsHigh=_height, name=_name, maxS=_maxS, maxT=_maxT;
+@synthesize hasPremultipliedAlpha=_hasPremultipliedAlpha;
 - (id) initWithData:(const void*)data pixelFormat:(Texture2DPixelFormat)pixelFormat pixelsWide:(NSUInteger)width pixelsHigh:(NSUInteger)height contentSize:(CGSize)size
 {
 	GLint					saveName;
@@ -96,8 +94,8 @@ static ccTexParams _texParamsCopy;
 		glGenTextures(1, &_name);
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &saveName);
 		glBindTexture(GL_TEXTURE_2D, _name);
-		
-		[Texture2D applyTexParameters];
+
+		[self setAntiAliasTexParameters];
 		
 		// Specify OpenGL texture image
 		
@@ -122,15 +120,17 @@ static ccTexParams _texParamsCopy;
 				[NSException raise:NSInternalInconsistencyException format:@""];
 				
 		}
-		
+				
 		glBindTexture(GL_TEXTURE_2D, saveName);
-		
+	
 		_size = size;
 		_width = width;
 		_height = height;
 		_format = pixelFormat;
 		_maxS = size.width / (float)width;
 		_maxT = size.height / (float)height;
+
+		_hasPremultipliedAlpha = NO;
 	}					
 	return self;
 }
@@ -154,12 +154,12 @@ static ccTexParams _texParamsCopy;
 @end
 
 @implementation Texture2D (Image)
-
+	
 - (id) initWithImage:(UIImage *)uiImage
 {
 	NSUInteger				width,
-	height,
-	i;
+							height,
+							i;
 	CGContextRef			context = nil;
 	void*					data = nil;;
 	CGColorSpaceRef			colorSpace;
@@ -183,9 +183,10 @@ static ccTexParams _texParamsCopy;
 		return nil;
 	}
 	
-	
+
 	info = CGImageGetAlphaInfo(image);
 	hasAlpha = ((info == kCGImageAlphaPremultipliedLast) || (info == kCGImageAlphaPremultipliedFirst) || (info == kCGImageAlphaLast) || (info == kCGImageAlphaFirst) ? YES : NO);
+	
 	size_t bpp = CGImageGetBitsPerComponent(image);
 	if(CGImageGetColorSpace(image)) {
 		if(hasAlpha || bpp >= 8)
@@ -197,7 +198,7 @@ static ccTexParams _texParamsCopy;
 	
 	imageSize = CGSizeMake(CGImageGetWidth(image), CGImageGetHeight(image));
 	transform = CGAffineTransformIdentity;
-	
+
 	width = imageSize.width;
 	
 	if((width != 1) && (width & (width - 1))) {
@@ -213,13 +214,16 @@ static ccTexParams _texParamsCopy;
 			i *= 2;
 		height = i;
 	}
-	while((width > kMaxTextureSize) || (height > kMaxTextureSize)) {
-		width /= 2;
-		height /= 2;
-		transform = CGAffineTransformScale(transform, 0.5f, 0.5f);
-		imageSize.width *= 0.5f;
-		imageSize.height *= 0.5f;
-	}
+	
+	NSAssert2( (width <= kMaxTextureSize) && (height <= kMaxTextureSize), @"Image is bigger than the supported %d x %d", kMaxTextureSize, kMaxTextureSize);
+
+//	while((width > kMaxTextureSize) || (height > kMaxTextureSize)) {
+//		width /= 2;
+//		height /= 2;
+//		transform = CGAffineTransformScale(transform, 0.5f, 0.5f);
+//		imageSize.width *= 0.5f;
+//		imageSize.height *= 0.5f;
+//	}
 	
 	// Create the bitmap graphics context
 	
@@ -246,14 +250,14 @@ static ccTexParams _texParamsCopy;
 			[NSException raise:NSInternalInconsistencyException format:@"Invalid pixel format"];
 	}
 	
-	
+
 	CGContextClearRect(context, CGRectMake(0, 0, width, height));
 	CGContextTranslateCTM(context, 0, height - imageSize.height);
 	
 	if(!CGAffineTransformIsIdentity(transform))
 		CGContextConcatCTM(context, transform);
 	CGContextDrawImage(context, CGRectMake(0, 0, CGImageGetWidth(image), CGImageGetHeight(image)), image);
-	
+
 	// Repack the pixel data into the right format
 	
 	if(pixelFormat == kTexture2DPixelFormat_RGB565) {
@@ -301,6 +305,9 @@ static ccTexParams _texParamsCopy;
 		data = tempData;
 	}
 	self = [self initWithData:data pixelFormat:pixelFormat pixelsWide:width pixelsHigh:height contentSize:imageSize];
+
+	// should be after calling super init
+	_hasPremultipliedAlpha = (info == kCGImageAlphaPremultipliedLast || info == kCGImageAlphaPremultipliedFirst);
 	
 	CGContextRelease(context);
 	free(data);
@@ -428,7 +435,7 @@ static ccTexParams _texParamsCopy;
 		glGetIntegerv(GL_TEXTURE_BINDING_2D, &saveName);
 		glBindTexture(GL_TEXTURE_2D, _name);
 
-		[Texture2D applyTexParameters];
+		[self setAntiAliasTexParameters];
 		
 		GLenum format;
 		GLsizei size = length * length * bpp / 8;
@@ -468,6 +475,8 @@ static ccTexParams _texParamsCopy;
 		_size = CGSizeMake(_width, _height);
 
 		[pvr release];
+
+		[self setAntiAliasTexParameters];
 	}
 	return self;
 }
@@ -478,42 +487,25 @@ static ccTexParams _texParamsCopy;
 //
 @implementation Texture2D (GLFilter)
 
-+(void) setTexParameters: (ccTexParams*) texParams
+-(void) setTexParameters: (ccTexParams*) texParams
 {
-	_texParams = *texParams;
+	glBindTexture( GL_TEXTURE_2D, self.name );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texParams->minFilter );
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texParams->magFilter );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texParams->wrapS );
+	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texParams->wrapT );
 }
 
-+(ccTexParams) texParameters
+-(void) setAliasTexParameters
 {
-	return _texParams;
+	ccTexParams texParams = { GL_NEAREST, GL_NEAREST, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE };
+	[self setTexParameters: &texParams];
 }
 
-+(void) applyTexParameters
+-(void) setAntiAliasTexParameters
 {
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, _texParams.minFilter );
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, _texParams.magFilter );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, _texParams.wrapS );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, _texParams.wrapT );
-}
-
-+(void) restoreTexParameters
-{
-	_texParams = _texParamsCopy;
-}
-
-+(void) saveTexParameters
-{
-	_texParamsCopy = _texParams;
-}
-
-+(void) setAliasTexParameters
-{
-	_texParams.magFilter = _texParams.minFilter = GL_NEAREST;
-}
-
-+(void) setAntiAliasTexParameters
-{
-	_texParams.magFilter = _texParams.minFilter = GL_LINEAR;
+	ccTexParams texParams = { GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE };
+	[self setTexParameters: &texParams];
 }
 @end
 
@@ -531,5 +523,3 @@ static ccTexParams _texParamsCopy;
 	return defaultAlphaPixelFormat;
 }
 @end
-
-

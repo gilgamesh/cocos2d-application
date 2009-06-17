@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -12,44 +12,80 @@
  *
  */
 
-#import <QuartzCore/QuartzCore.h>
-#import <OpenGLES/EAGLDrawable.h>
-#import <UIKit/UIKit.h>
 #import <OpenGLES/EAGL.h>
 #import <OpenGLES/ES1/gl.h>
 #import <OpenGLES/ES1/glext.h>
 
 #import "TextureMgr.h"
 #import "TextureNode.h"
+#import "ccMacros.h"
+#import "Support/CGPointExtension.h"
 
 @implementation TextureNode
 
-@synthesize texture, opacity, r, g, b;
+@synthesize opacity=opacity_, r=r_, g=g_, b=b_;
+@synthesize blendFunc = blendFunc_;
 
 - (id) init
 {
-	if( ! (self=[super init]) )
-		return nil;
-	
-	opacity = 255;
-	r = g = b = 255;
+	if( (self=[super init]) ) {
+		opacity_ = r_ = g_ = b_ = 255;
+		anchorPoint_ = ccp(0.5f, 0.5f);
+		blendFunc_.src = CC_BLEND_SRC;
+		blendFunc_.dst = CC_BLEND_DST;
+	}
 	
 	return self;
 }
 
 -(void) dealloc
 {
-	[texture release];
+	[texture_ release];
 	[super dealloc];
 }
 
--(void) setRGB: (GLubyte) rr :(GLubyte) gg :(GLubyte)bb
+-(void) setTexture:(Texture2D*) texture
 {
-	r=rr;
-	g=gg;
-	b=bb;
+	[texture_ release];
+	texture_ = [texture retain];
+	[self setContentSize: texture.contentSize];
+	if( ! [texture hasPremultipliedAlpha] ) {
+		blendFunc_.src = GL_SRC_ALPHA;
+		blendFunc_.dst = GL_ONE_MINUS_SRC_ALPHA;
+	}
+	opacityModifyRGB_ = [texture hasPremultipliedAlpha];
 }
 
+-(Texture2D*) texture
+{
+	return texture_;
+}
+
+#pragma mark TextureNode - RGBA protocol
+-(void) setRGB: (GLubyte) rr :(GLubyte) gg :(GLubyte)bb
+{
+	r_=rr;
+	g_=gg;
+	b_=bb;
+}
+
+-(void) setOpacity:(GLubyte)opacity
+{
+	// special opacity for premultiplied textures
+	opacity_ = opacity;
+	if( opacityModifyRGB_ )
+		r_ = g_ = b_ = opacity_;	
+}
+-(void) setOpacityModifyRGB:(BOOL)modify
+{
+	opacityModifyRGB_ = modify;
+}
+-(BOOL) doesOpacityModifyRGB
+{
+	return opacityModifyRGB_;
+}
+
+#pragma mark TextureNode - draw
 - (void) draw
 {
 	glEnableClientState( GL_VERTEX_ARRAY);
@@ -57,9 +93,18 @@
 
 	glEnable( GL_TEXTURE_2D);
 
-	glColor4ub( r, g, b, opacity);
+	glColor4ub( r_, g_, b_, opacity_);
+
+	BOOL newBlend = NO;
+	if( blendFunc_.src != CC_BLEND_SRC || blendFunc_.dst != CC_BLEND_DST ) {
+		newBlend = YES;
+		glBlendFunc( blendFunc_.src, blendFunc_.dst );
+	}
+
+	[texture_ drawAtPoint: CGPointZero];
 	
-	[texture drawAtPoint: CGPointZero];
+	if( newBlend )
+		glBlendFunc(CC_BLEND_SRC, CC_BLEND_DST);
 
 	// is this chepear than saving/restoring color state ?
 	glColor4ub( 255, 255, 255, 255);
@@ -68,11 +113,5 @@
 
 	glDisableClientState(GL_VERTEX_ARRAY );
 	glDisableClientState( GL_TEXTURE_COORD_ARRAY );
-}
-
--(CGSize) contentSize
-{
-	return [texture contentSize];
-}
-	
+}	
 @end

@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2009 Matt Oswald
  *
@@ -33,12 +33,14 @@ const int defaultCapacity = 29;
 
 @interface AtlasSpriteManager (private)
 -(void) resizeAtlas;
+-(void) updateBlendFunc;
 @end
 
 #pragma mark AtlasSpriteManager
 @implementation AtlasSpriteManager
 
-@synthesize atlas = textureAtlas_;
+@synthesize textureAtlas = textureAtlas_;
+@synthesize blendFunc = blendFunc_;
 
 -(void)dealloc
 {	
@@ -80,8 +82,13 @@ const int defaultCapacity = 29;
 -(id)initWithTexture:(Texture2D *)tex capacity:(NSUInteger)capacity
 {
 	if( (self=[super init])) {
+		
+		blendFunc_.src = CC_BLEND_SRC;
+		blendFunc_.dst = CC_BLEND_DST;
 		totalSprites_ = 0;
 		textureAtlas_ = [[TextureAtlas alloc] initWithTexture:tex capacity:capacity];
+		
+		[self updateBlendFunc];
 		
 		// no lazy alloc in this node
 		children = [[NSMutableArray alloc] initWithCapacity:capacity];
@@ -96,8 +103,13 @@ const int defaultCapacity = 29;
 -(id)initWithFile:(NSString *)fileImage capacity:(NSUInteger)capacity
 {
 	if( (self=[super init]) ) {
+		
+		blendFunc_.src = CC_BLEND_SRC;
+		blendFunc_.dst = CC_BLEND_DST;
 		totalSprites_ = 0;
 		textureAtlas_ = [[TextureAtlas alloc] initWithFile:fileImage capacity:capacity];
+		
+		[self updateBlendFunc];
 		
 		// no lazy alloc in this node
 		children = [[NSMutableArray alloc] initWithCapacity:capacity];
@@ -169,9 +181,6 @@ const int defaultCapacity = 29;
 
 	NSUInteger index = [self indexForNewChildAtZ:z];
 	[child insertInAtlasAtIndex: index];
-
-	if( textureAtlas_.withColorArray )
-		[child updateColor];
 
 	totalSprites_++;
 	[super addChild:child z:z tag:aTag];
@@ -260,30 +269,30 @@ const int defaultCapacity = 29;
 {
 	for( AtlasSprite *child in children )
 	{
-		if( child.dirtyPosition )
+		if( child.dirty )
 			[child updatePosition];
-		if( child.dirtyColor )
-			[child updateColor];
 	}
 
 	if(totalSprites_ > 0)
 	{
 		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_COLOR_ARRAY);
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-		
-		if( textureAtlas_.withColorArray )
-			glEnableClientState(GL_COLOR_ARRAY);
-
 		glEnable(GL_TEXTURE_2D);
-
-		[textureAtlas_ drawQuads];
-
+		
+		BOOL preMulti = [[textureAtlas_ texture] hasPremultipliedAlpha];
+		if( !preMulti )
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		
+		[textureAtlas_ drawNumberOfQuads:totalSprites_];
+		
+		if( !preMulti )
+			glBlendFunc(CC_BLEND_SRC, CC_BLEND_DST);
+		
 		glDisable(GL_TEXTURE_2D);
-
-		if( textureAtlas_.withColorArray )
-			glDisableClientState(GL_COLOR_ARRAY);
-		glDisableClientState(GL_VERTEX_ARRAY);
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+		glDisableClientState(GL_COLOR_ARRAY);
+		glDisableClientState(GL_VERTEX_ARRAY);
 	}
 }
 
@@ -302,9 +311,27 @@ const int defaultCapacity = 29;
 		// serious problems
 		CCLOG(@"WARNING: Not enough memory to resize the atlas");
 		NSAssert(NO,@"XXX: AltasSpriteManager#resizeAtlas SHALL handle this assert");
+	}	
+}
+
+#pragma mark AtlasSpriteManager - CocosNodeTexture protocol
+
+-(void) updateBlendFunc
+{
+	if( ! [textureAtlas_.texture hasPremultipliedAlpha] ) {
+		blendFunc_.src = GL_SRC_ALPHA;
+		blendFunc_.dst = GL_ONE_MINUS_SRC_ALPHA;
 	}
-	
-	for(AtlasSprite *sprite in children)
-		[sprite updateAtlas];
+}
+
+-(void) setTexture:(Texture2D*)texture
+{
+	textureAtlas_.texture = texture;
+	[self updateBlendFunc];
+}
+
+-(Texture2D*) texture
+{
+	return textureAtlas_.texture;
 }
 @end

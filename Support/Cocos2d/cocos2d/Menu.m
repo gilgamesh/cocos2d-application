@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -15,6 +15,7 @@
 
 #import "Menu.h"
 #import "Director.h"
+#import "TouchDispatcher.h"
 #import "Support/CGPointExtension.h"
 
 enum {
@@ -23,12 +24,12 @@ enum {
 
 @interface Menu (Private)
 // returns touched menu item, if any
--(MenuItem *) itemForTouch: (UITouch *) touch idx: (int*) idx;
+-(MenuItem *) itemForTouch: (UITouch *) touch;
 @end
 
 @implementation Menu
 
-@synthesize opacity;
+@synthesize opacity=opacity_, r=r_, g=g_, b=b_;
 
 - (id) init
 {
@@ -52,36 +53,43 @@ enum {
 
 -(id) initWithItems: (MenuItem*) item vaList: (va_list) args
 {
-	if( !(self=[super init]) )
-		return nil;
-	
-	// menu in the center of the screen
-	CGSize s = [[Director sharedDirector] winSize];
-	
-	// XXX: in v0.7, winSize should return the visible size
-	// XXX: so the bar calculation should be done there
-	CGRect r = [[UIApplication sharedApplication] statusBarFrame];
-	if([[Director sharedDirector] landscape])
-		s.height -= r.size.width;
-	else
-	    s.height -= r.size.height;
-	position = ccp(s.width/2, s.height/2);
+	if( (self=[super init]) ) {
 
-	isTouchEnabled = YES;
-	selectedItem = -1;
-	
-	int z=0;
-	
-	if (item) {
-		[self addChild: item z:z];
-		MenuItem *i = va_arg(args, MenuItem*);
-		while(i) {
-			z++;
-			[self addChild: i z:z];
-			i = va_arg(args, MenuItem*);
+		isTouchEnabled = YES;
+		
+		// menu in the center of the screen
+		CGSize s = [[Director sharedDirector] winSize];
+		
+		self.relativeTransformAnchor = NO;
+		anchorPoint_ = ccp(0.5f, 0.5f);
+		[self setContentSize:s];
+		
+		// XXX: in v0.7, winSize should return the visible size
+		// XXX: so the bar calculation should be done there
+		CGRect r = [[UIApplication sharedApplication] statusBarFrame];
+		ccDeviceOrientation orientation = [[Director sharedDirector] deviceOrientation];
+		if( orientation == CCDeviceOrientationLandscapeLeft || orientation == CCDeviceOrientationLandscapeRight )
+			s.height -= r.size.width;
+		else
+			s.height -= r.size.height;
+		self.position = ccp(s.width/2, s.height/2);
+
+		int z=0;
+		
+		if (item) {
+			[self addChild: item z:z];
+			MenuItem *i = va_arg(args, MenuItem*);
+			while(i) {
+				z++;
+				[self addChild: i z:z];
+				i = va_arg(args, MenuItem*);
+			}
 		}
+	//	[self alignItemsVertically];
+		
+		selectedItem = nil;
+		state = kMenuStateWaiting;
 	}
-//	[self alignItemsVertically];
 	
 	return self;
 }
@@ -99,71 +107,119 @@ enum {
 	NSAssert( [child isKindOfClass:[MenuItem class]], @"Menu only supports MenuItem objects as children");
 	return [super addChild:child z:z tag:aTag];
 }
-
+	
 #pragma mark Menu - Events
 
-- (BOOL)ccTouchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
-{
-	UITouch *touch = [touches anyObject];	
-	int idx;
-	MenuItem *item = [self itemForTouch:touch idx:&idx];
+//- (BOOL)ccTouchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+//{
+//	UITouch *touch = [touches anyObject];	
+//	MenuItem *item = [self itemForTouch:touch];
+//	
+//	if( item ) {
+//		[item selected];
+//		selectedItem = item;
+//		return kEventHandled;
+//	}
+//	
+//	return kEventIgnored;
+//}
+//
+//- (BOOL)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+//{
+//	UITouch *touch = [touches anyObject];	
+//	MenuItem *item = [self itemForTouch:touch];
+//	
+//	if( item ) {
+//		[item unselected];
+//		[item activate];
+//		return kEventHandled;
+//		
+//	} else if( selectedItem ) {
+//		[selectedItem unselected];
+//		selectedItem = nil;
+//		
+//		// don't return kEventHandled here, since we are not handling it!
+//	}
+//	return kEventIgnored;
+//}
+//
+//- (BOOL)ccTouchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
+//{
+//	UITouch *touch = [touches anyObject];	
+//	MenuItem *item = [self itemForTouch:touch];
+//	
+//	// "mouse" draged inside a button
+//	if( item ) {
+//		if( item != selectedItem ) {
+//			if( selectedItem  )
+//				[selectedItem unselected];
+//			[item selected];
+//			selectedItem = item;
+//			return kEventHandled;
+//		}
+//		
+//		// "mouse" draged outside the selected button
+//	} else {
+//		if( selectedItem ) {
+//			[selectedItem unselected];
+//			selectedItem = nil;
+//			
+//			// don't return kEventHandled here, since we are not handling it!
+//		}
+//	}
+//	
+//	return kEventIgnored;
+//}
 
-	if( item ) {
-		[item selected];
-		selectedItem = idx;
-		return kEventHandled;
-	}
-	
-	return kEventIgnored;
+-(void) registerWithTouchDispatcher
+{
+	[[TouchDispatcher sharedDispatcher] addTargetedDelegate:self priority:INT_MIN+1 swallowsTouches:YES];
 }
 
-- (BOOL)ccTouchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+-(BOOL) ccTouchBegan:(UITouch *)touch withEvent:(UIEvent *)event
 {
-	UITouch *touch = [touches anyObject];	
-	int idx;
-	MenuItem *item = [self itemForTouch:touch idx:&idx];
+	if( state != kMenuStateWaiting ) return NO;
 	
-	if( item ) {
-		[item unselected];
-		[item activate];
-		return kEventHandled;
-
-	} else if( selectedItem != -1 ) {
-		[[children objectAtIndex:selectedItem] unselected];
-		selectedItem = -1;
-		
-		// don't return kEventHandled here, since we are not handling it!
+	selectedItem = [self itemForTouch:touch];
+	[selectedItem selected];
+	
+	if( selectedItem ) {
+		state = kMenuStateTrackingTouch;
+		return YES;
 	}
-	return kEventIgnored;
+	return NO;
 }
 
-- (BOOL)ccTouchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
+-(void) ccTouchEnded:(UITouch *)touch withEvent:(UIEvent *)event
 {
-	UITouch *touch = [touches anyObject];	
-	int idx;
-	MenuItem *item = [self itemForTouch:touch idx:&idx];
+	NSAssert(state == kMenuStateTrackingTouch, @"[Menu ccTouchEnded] -- invalid state");
 	
-	// "mouse" draged inside a button
-	if( item ) {
-		if( idx != selectedItem ) {
-			if( selectedItem != -1 )
-				[[children objectAtIndex:selectedItem] unselected];
-			[item selected];
-			selectedItem = idx;
-			return kEventHandled;
-		}
+	[selectedItem unselected];
+	[selectedItem activate];
+	
+	state = kMenuStateWaiting;
+}
 
-	// "mouse" draged outside the selected button
-	} else {
-		if( selectedItem != -1 ) {
-			[[children objectAtIndex:selectedItem] unselected];
-			selectedItem = -1;
-			
-			// don't return kEventHandled here, since we are not handling it!
-		}
-	}
+-(void) ccTouchCancelled:(UITouch *)touch withEvent:(UIEvent *)event
+{
+	NSAssert(state == kMenuStateTrackingTouch, @"[Menu ccTouchCancelled] -- invalid state");
 	
-	return kEventIgnored;
+	[selectedItem unselected];
+	
+	state = kMenuStateWaiting;
+}
+
+-(void) ccTouchMoved:(UITouch *)touch withEvent:(UIEvent *)event
+{
+	NSAssert(state == kMenuStateTrackingTouch, @"[Menu ccTouchMoved] -- invalid state");
+	
+	MenuItem *currentItem = [self itemForTouch:touch];
+	
+	if (currentItem != selectedItem) {
+		[selectedItem unselected];
+		selectedItem = currentItem;
+		[selectedItem selected];
+	}
 }
 
 #pragma mark Menu - Alignment
@@ -358,35 +414,36 @@ enum {
 /** Override synthesized setOpacity to recurse items */
 - (void) setOpacity:(GLubyte)newOpacity
 {
-	opacity = newOpacity;
-	for(id<CocosNodeOpacity> item in children)
-		[item setOpacity:opacity];
+	opacity_ = newOpacity;
+	for(id<CocosNodeRGBA> item in children)
+		[item setOpacity:opacity_];
+}
+
+- (void) setRGB:(GLubyte)r:(GLubyte)g:(GLubyte)b
+{
+	r_=r;
+	g_=g;
+	b_=b;
+	for(id<CocosNodeRGBA> item in children)
+		[item setRGB:r:g:b];
 }
 
 #pragma mark Menu - Private
 
--(MenuItem *) itemForTouch: (UITouch *) touch idx: (int*) idx;
+-(MenuItem *) itemForTouch: (UITouch *) touch;
 {
 	CGPoint touchLocation = [touch locationInView: [touch view]];
 	touchLocation = [[Director sharedDirector] convertCoordinate: touchLocation];
 	
-	int i=0;
 	for( MenuItem* item in children ) {
 		CGPoint local = [item convertToNodeSpace:touchLocation];
 
 		CGRect r = [item rect];
 		r.origin = CGPointZero;
 		
-		if( CGRectContainsPoint( r, local ) ) {
-			*idx = i;
+		if( CGRectContainsPoint( r, local ) )
 			return item;
-		}
-		
-		i++;
 	}
 	return nil;
 }
-
-
-
 @end

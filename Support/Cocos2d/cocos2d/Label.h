@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -22,8 +22,10 @@
 /** Label is a subclass of TextureNode that knows how to render text labels
  *
  * All features from TextureNode are valid in Label
+ *
+ * Label are slow. Consider using LabelAtlas or BitmapFontAtlas instead.
  */
-@interface Label : TextureNode
+@interface Label : TextureNode <CocosNodeLabel>
 {
 	CGSize _dimensions;
 	UITextAlignment _alignment;

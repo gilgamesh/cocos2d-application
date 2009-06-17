@@ -1,6 +1,6 @@
 /* cocos2d for iPhone
  *
- * http://code.google.com/p/cocos2d-iphone
+ * http://www.cocos2d-iphone.org
  *
  * Copyright (C) 2008,2009 Ricardo Quesada
  *
@@ -18,7 +18,9 @@
 
 #import "Layer.h"
 #import "Director.h"
+#import "TouchDispatcher.h"
 #import "ccMacros.h"
+#import "Support/CGPointExtension.h"
 
 #pragma mark -
 #pragma mark Layer
@@ -29,30 +31,33 @@
 
 -(id) init
 {
-	if( ! (self=[super init]) )
-		return nil;
+	if( (self=[super init]) ) {
 	
-	CGSize s = [[Director sharedDirector] winSize];
-	relativeTransformAnchor = NO;
+		CGSize s = [[Director sharedDirector] winSize];
+		anchorPoint_ = ccp(0.5f, 0.5f);
+		[self setContentSize:s];
+		self.relativeTransformAnchor = NO;
 
-	transformAnchor.x = s.width / 2;
-	transformAnchor.y = s.height / 2;
-	
-	isTouchEnabled = NO;
-	isAccelerometerEnabled = NO;
+		isTouchEnabled = NO;
+		isAccelerometerEnabled = NO;
+	}
 	
 	return self;
 }
 
+-(void) registerWithTouchDispatcher
+{
+	[[TouchDispatcher sharedDispatcher] addStandardDelegate:self priority:0];
+}
+
 -(void) onEnter
 {
-
 	// register 'parent' nodes first
 	// since events are propagated in reverse order
-	if( isTouchEnabled )
-		[[Director sharedDirector] addEventHandler:self];
-
-	// the iterate over all the children
+	if (isTouchEnabled)
+		[self registerWithTouchDispatcher];
+	
+	// then iterate over all the children
 	[super onEnter];
 
 	if( isAccelerometerEnabled )
@@ -61,13 +66,17 @@
 
 -(void) onExit
 {
-	if( isTouchEnabled )
-		[[Director sharedDirector] removeEventHandler:self];
-
+	[[TouchDispatcher sharedDispatcher] removeDelegate:self];
+	
 	if( isAccelerometerEnabled )
 		[[UIAccelerometer sharedAccelerometer] setDelegate:nil];
 	
 	[super onExit];
+}
+-(BOOL) ccTouchBegan:(UITouch *)touch withEvent:(UIEvent *)event
+{
+	NSAssert(NO, @"Layer#ccTouchBegan override me");
+	return YES;
 }
 @end
 
@@ -171,7 +180,13 @@
 	glColorPointer(4, GL_UNSIGNED_BYTE, 0, squareColors);
 	glEnableClientState(GL_COLOR_ARRAY);
 	
+	if( opacity != 255 )
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	
+	if( opacity != 255 )
+		glBlendFunc(CC_BLEND_SRC, CC_BLEND_DST);
 	
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
