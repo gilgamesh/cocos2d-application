@@ -11,3 +11,5 @@ I added this project template to:
 and installed with: 
 git clone git://github.com/tjweir/cocos2d-application.git
 
+Static linking is awesome.
+
