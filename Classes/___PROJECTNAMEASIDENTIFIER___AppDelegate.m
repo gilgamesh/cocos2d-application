@@ -21,7 +21,7 @@
 	
 	[window setMultipleTouchEnabled:YES];
 	Director *director = [Director sharedDirector];
-	[director setLandscape:YES];
+	[director setDeviceOrientation:UIDeviceOrientationLandscapeLeft];
 	[director attachInWindow:window];
 	[window makeKeyAndVisible];
 	[director runWithScene:[MyScene node]];
