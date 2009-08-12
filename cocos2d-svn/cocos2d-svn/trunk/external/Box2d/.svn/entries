@@ -1,0 +1,58 @@
+8
+
+dir
+1282
+http://cocos2d-iphone.googlecode.com/svn/trunk/external/Box2d
+http://cocos2d-iphone.googlecode.com/svn
+
+
+
+2009-08-11T02:56:58.185375Z
+1273
+ricardoquesada
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+79afc9a6-2f50-0410-804d-6f1bdedaafc9
+
+cocos2d_issue_493-GLES_Render.patch
+file
+
+
+
+
+2009-08-12T15:15:48.000000Z
+adc07316921993bacf60db3efb37a3c8
+2009-08-10T14:19:34.045585Z
+1265
+ricardoquesada
+
+Box2DTestBed
+dir
+
+cocos2d_issue_493-DrawDebugData.patch
+file
+
+
+
+
+2009-08-12T15:15:48.000000Z
+4aa6cef1418b1dd4d1f52d42b58dcd68
+2009-08-10T14:19:34.045585Z
+1265
+ricardoquesada
+
+Box2D
+dir
+

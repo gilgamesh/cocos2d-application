@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/1273/trunk/external/Box2d
+END
+cocos2d_issue_493-GLES_Render.patch
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/!svn/ver/1265/trunk/external/Box2d/cocos2d_issue_493-GLES_Render.patch
+END
+cocos2d_issue_493-DrawDebugData.patch
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/!svn/ver/1265/trunk/external/Box2d/cocos2d_issue_493-DrawDebugData.patch
+END

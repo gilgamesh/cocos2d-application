@@ -1,0 +1,86 @@
+8
+
+dir
+1282
+http://cocos2d-iphone.googlecode.com/svn/trunk/cocos2d-iphone-template
+http://cocos2d-iphone.googlecode.com/svn
+
+
+
+2009-08-10T13:12:54.549513Z
+1260
+ricardoquesada
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+79afc9a6-2f50-0410-804d-6f1bdedaafc9
+
+main.m
+file
+
+
+
+
+2009-08-12T15:15:48.000000Z
+13dfd4ee31db363dbe331c22049bfba7
+2009-08-09T19:11:24.726928Z
+1254
+ricardoquesada
+has-props
+
+fps_images.png
+file
+
+
+
+
+2009-08-12T15:15:48.000000Z
+dcfbbf91de30c8cd3724269bcd95c54f
+2009-08-09T19:11:24.726928Z
+1254
+ricardoquesada
+has-props
+
+Info.plist
+file
+
+
+
+
+2009-08-12T15:15:48.000000Z
+6b54c974d12c227a3f00a1c486c57e4b
+2009-08-09T19:11:24.726928Z
+1254
+ricardoquesada
+has-props
+
+Classes
+dir
+
+___PROJECTNAME___.xcodeproj
+dir
+
+___PROJECTNAMEASIDENTIFIER____Prefix.pch
+file
+
+
+
+
+2009-08-12T15:15:48.000000Z
+a20c95d25ea8e3309012c962822fd80d
+2009-08-09T19:11:24.726928Z
+1254
+ricardoquesada
+has-props
+

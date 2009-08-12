@@ -1,0 +1,43 @@
+8
+
+dir
+1282
+http://cocos2d-iphone.googlecode.com/svn/trunk/experimental
+http://cocos2d-iphone.googlecode.com/svn
+
+
+
+2009-08-05T12:50:52.200413Z
+1235
+ricardoquesada
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+79afc9a6-2f50-0410-804d-6f1bdedaafc9
+
+sound-engine
+dir
+
+README
+file
+
+
+
+
+2009-08-12T15:15:57.000000Z
+dea1fe176507bbd1c26bc3a7c79cad80
+2009-02-07T15:02:28.263076Z
+520
+ricardoquesada
+

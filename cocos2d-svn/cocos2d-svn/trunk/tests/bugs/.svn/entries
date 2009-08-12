@@ -1,0 +1,52 @@
+8
+
+dir
+1282
+http://cocos2d-iphone.googlecode.com/svn/trunk/tests/bugs
+http://cocos2d-iphone.googlecode.com/svn
+
+
+
+2009-07-14T20:20:00.672082Z
+1144
+ricardoquesada
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+79afc9a6-2f50-0410-804d-6f1bdedaafc9
+
+Bug-422.h
+file
+
+
+
+
+2009-08-12T15:15:59.000000Z
+cd6aca3f072ecc2f331a9e69290a9e4b
+2009-07-10T18:11:14.308751Z
+1117
+ricardoquesada
+
+Bug-422.m
+file
+
+
+
+
+2009-08-12T15:15:59.000000Z
+1d8c0a364ab38e420eabc8925a73b586
+2009-07-14T20:20:00.672082Z
+1144
+ricardoquesada
+

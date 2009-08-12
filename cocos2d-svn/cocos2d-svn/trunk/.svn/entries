@@ -1,0 +1,207 @@
+8
+
+dir
+1282
+http://cocos2d-iphone.googlecode.com/svn/trunk
+http://cocos2d-iphone.googlecode.com/svn
+
+
+
+2009-08-12T03:08:19.135245Z
+1282
+ricardoquesada
+has-props
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+79afc9a6-2f50-0410-804d-6f1bdedaafc9
+
+LICENSE.cocosdenshion
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+6cc4433b425379fdd045e8a75f760cc3
+2009-06-01T09:25:16.091984Z
+994
+ricardoquesada
+
+doxygen.config
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+be96f5fd1cb527df54e3b87cbe4bfc42
+2009-08-10T15:42:59.133954Z
+1266
+ricardoquesada
+
+LICENSE
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+51494af544bba679d2b660c9b933ce47
+2009-07-21T18:16:55.481048Z
+1182
+ricardoquesada
+
+external
+dir
+
+AUTHORS
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+b14d061250520928225559f9d988b14c
+2009-08-11T21:47:55.943918Z
+1278
+ricardoquesada
+
+cocos2d-iphone-template
+dir
+
+cocoslive
+dir
+
+CHANGELOG
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+04bcd7a69fc2ddc98f2c14476e6fcd0f
+2009-08-11T23:56:57.152877Z
+1279
+ricardoquesada
+
+cocos2d
+dir
+
+cocos2d-iphone.xcclassmodel
+dir
+
+experimental
+dir
+
+LICENSE.TouchJSON
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+5e1978bb6420fd2792b533297057a708
+2009-03-13T02:01:24.607462Z
+673
+ricardoquesada
+
+README
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+8a2e45289ab50f9d33a9ab925776242f
+2009-08-10T15:42:59.133954Z
+1266
+ricardoquesada
+
+CocosDenshion
+dir
+
+LICENSE.chipmunk
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+1f8f975fa02de7e821005afd4004e866
+2008-10-20T15:33:30.828155Z
+271
+ricardoquesada
+
+LICENSE.box2d
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+d0a73d52dbe6da5d8cc0f28493defb26
+2009-07-17T16:58:05.795268Z
+1164
+ricardoquesada
+has-props
+
+tools
+dir
+
+tests
+dir
+
+DONORS
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+f2e35e26764a4362c31bca80bc188f31
+2009-08-12T03:08:19.135245Z
+1282
+ricardoquesada
+
+cocos2d-iphone.xcodeproj
+dir
+
+Resources
+dir
+
+LICENSE.artwork
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+2f587ed046649a8b4d2b8cbff0c382c3
+2009-08-01T15:53:35.600678Z
+1217
+ricardoquesada
+
+install_template.sh
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+80a4be9e17d6f6976f1c0c26619f37c1
+2009-08-10T17:22:58.897089Z
+1267
+ricardoquesada
+has-props
+

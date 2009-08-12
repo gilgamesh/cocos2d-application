@@ -1,0 +1,49 @@
+8
+
+dir
+1282
+http://cocos2d-iphone.googlecode.com/svn/trunk/external/Box2d/Box2D
+http://cocos2d-iphone.googlecode.com/svn
+
+
+
+2009-08-11T02:56:58.185375Z
+1273
+ricardoquesada
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+79afc9a6-2f50-0410-804d-6f1bdedaafc9
+
+Box2D.h
+file
+
+
+
+
+2009-08-12T15:15:48.000000Z
+f098b163a4ac1bd83ad5657a19f9397f
+2009-08-10T23:55:24.842425Z
+1271
+ricardoquesada
+
+Dynamics
+dir
+
+Common
+dir
+
+Collision
+dir
+
