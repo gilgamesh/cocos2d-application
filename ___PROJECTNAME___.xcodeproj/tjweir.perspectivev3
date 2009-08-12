@@ -279,8 +279,6 @@
 								<string>DCCBEF8D0F601EE20040855A</string>
 								<string>29B97317FDCFA39411CA2CEA</string>
 								<string>1C37FBAC04509CD000000102</string>
-								<string>CA3EAC790FEDBECE004BBF8E</string>
-								<string>CA3EAC7A0FEDBECE004BBF8E</string>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
@@ -309,7 +307,7 @@
 							<real>185</real>
 						</array>
 						<key>RubberWindowFrame</key>
-						<string>-1411 286 1405 845 -1920 236 1920 1200 </string>
+						<string>-1696 574 1405 845 -1920 236 1920 1200 </string>
 					</dict>
 					<key>Module</key>
 					<string>PBXSmartGroupTreeModule</string>
@@ -339,45 +337,30 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>CA3EACFE0FEE7154004BBF8E</string>
+										<string>CA3EAD120FEE7449004BBF8E</string>
 										<key>history</key>
 										<array>
-											<string>CAF546AE0FEA74F500F96F11</string>
-											<string>CAF546AF0FEA74F500F96F11</string>
 											<string>CA3EACAD0FEE6FFD004BBF8E</string>
 											<string>CA3EACE20FEE7128004BBF8E</string>
-											<string>CA3EACE40FEE7128004BBF8E</string>
 											<string>CA3EACE60FEE7128004BBF8E</string>
 											<string>CA3EACE80FEE7128004BBF8E</string>
 											<string>CA3EACF80FEE7154004BBF8E</string>
 											<string>CA3EACF90FEE7154004BBF8E</string>
+											<string>CA3EAD100FEE7449004BBF8E</string>
 											<string>CA3EACFA0FEE7154004BBF8E</string>
 										</array>
 										<key>prevStack</key>
 										<array>
 											<string>CAF546B20FEA74F500F96F11</string>
-											<string>CAF546B40FEA74F500F96F11</string>
-											<string>CAF546B50FEA74F500F96F11</string>
 											<string>CA3EACB00FEE6FFD004BBF8E</string>
 											<string>CA3EACB10FEE6FFD004BBF8E</string>
-											<string>CA3EACB20FEE6FFD004BBF8E</string>
 											<string>CA3EACB30FEE6FFD004BBF8E</string>
 											<string>CA3EACB40FEE6FFD004BBF8E</string>
-											<string>CA3EACB50FEE6FFD004BBF8E</string>
-											<string>CA3EACD10FEE706A004BBF8E</string>
 											<string>CA3EACD20FEE706A004BBF8E</string>
-											<string>CA3EACEA0FEE7128004BBF8E</string>
-											<string>CA3EACEB0FEE7128004BBF8E</string>
 											<string>CA3EACEC0FEE7128004BBF8E</string>
-											<string>CA3EACED0FEE7128004BBF8E</string>
-											<string>CA3EACEE0FEE7128004BBF8E</string>
-											<string>CA3EACEF0FEE7128004BBF8E</string>
-											<string>CA3EACF00FEE7128004BBF8E</string>
 											<string>CA3EACF10FEE7128004BBF8E</string>
 											<string>CA3EACF30FEE7128004BBF8E</string>
-											<string>CA3EACFB0FEE7154004BBF8E</string>
-											<string>CA3EACFC0FEE7154004BBF8E</string>
-											<string>CA3EACFD0FEE7154004BBF8E</string>
+											<string>CA3EAD110FEE7449004BBF8E</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -393,7 +376,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {1198, 799}}</string>
 								<key>RubberWindowFrame</key>
-								<string>-1411 286 1405 845 -1920 236 1920 1200 </string>
+								<string>-1696 574 1405 845 -1920 236 1920 1200 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -416,7 +399,9 @@
 									<key>GeometryConfiguration</key>
 									<dict>
 										<key>Frame</key>
-										<string>{{10, 27}, {1198, 532}}</string>
+										<string>{{10, 27}, {1198, -27}}</string>
+										<key>RubberWindowFrame</key>
+										<string>-1696 574 1405 845 -1920 236 1920 1200 </string>
 									</dict>
 									<key>Module</key>
 									<string>XCDetailModule</string>
@@ -471,8 +456,6 @@
 									<dict>
 										<key>Frame</key>
 										<string>{{10, 27}, {1198, -27}}</string>
-										<key>RubberWindowFrame</key>
-										<string>-1411 286 1405 845 -1920 236 1920 1200 </string>
 									</dict>
 									<key>Module</key>
 									<string>PBXBuildResultsModule</string>
@@ -500,11 +483,11 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>CA3EAC680FEDBE5C004BBF8E</string>
+				<string>CA3EAD130FEE7449004BBF8E</string>
 				<string>1CA23ED40692098700951B8B</string>
-				<string>CA3EAC690FEDBE5C004BBF8E</string>
+				<string>CA3EAD140FEE7449004BBF8E</string>
 				<string>CAF544F80FE9B38700F96F11</string>
-				<string>CA3EAC6A0FEDBE5C004BBF8E</string>
+				<string>CA3EAD150FEE7449004BBF8E</string>
 				<string>1CA23EDF0692099D00951B8B</string>
 				<string>1CA23EE00692099D00951B8B</string>
 				<string>1CA23EE10692099D00951B8B</string>
@@ -693,12 +676,10 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>CA3EACC70FEE7044004BBF8E</string>
-		<string>CA3EACC80FEE7044004BBF8E</string>
 		<string>/Users/tjweir/g/cocos2d-application/___PROJECTNAME___.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
-	<string>-1411 286 1405 845 -1920 236 1920 1200 </string>
+	<string>-1696 574 1405 845 -1920 236 1920 1200 </string>
 	<key>WindowToolsV3</key>
 	<array>
 		<dict>
