@@ -50,6 +50,9 @@ be96f5fd1cb527df54e3b87cbe4bfc42
 1266
 ricardoquesada
 
+external
+dir
+
 LICENSE
 file
 
@@ -62,7 +65,7 @@ file
 1182
 ricardoquesada
 
-external
+cocos2d-iphone-template
 dir
 
 AUTHORS
@@ -76,9 +79,6 @@ b14d061250520928225559f9d988b14c
 2009-08-11T21:47:55.943918Z
 1278
 ricardoquesada
-
-cocos2d-iphone-template
-dir
 
 cocoslive
 dir
@@ -95,14 +95,23 @@ file
 1279
 ricardoquesada
 
-cocos2d
-dir
-
 cocos2d-iphone.xcclassmodel
 dir
 
-experimental
+cocos2d
 dir
+
+README
+file
+
+
+
+
+2009-08-12T15:16:23.000000Z
+8a2e45289ab50f9d33a9ab925776242f
+2009-08-10T15:42:59.133954Z
+1266
+ricardoquesada
 
 LICENSE.TouchJSON
 file
@@ -116,17 +125,8 @@ file
 673
 ricardoquesada
 
-README
-file
-
-
-
-
-2009-08-12T15:16:23.000000Z
-8a2e45289ab50f9d33a9ab925776242f
-2009-08-10T15:42:59.133954Z
-1266
-ricardoquesada
+experimental
+dir
 
 CocosDenshion
 dir
